@@ -26,6 +26,8 @@ function getMagnitudeColor(mag: number): string {
 
 export default function Map({ earthquakes }: MapProps) {
   return (
+    // The wrapper div ensures the map fills whatever flex/absolute parent it lives in
+    <div style={{ position: "absolute", inset: 0 }}>
     <MapContainer
       center={[37, -119]}
       zoom={6}
@@ -67,5 +69,6 @@ export default function Map({ earthquakes }: MapProps) {
         );
       })}
     </MapContainer>
+    </div>
   );
 }

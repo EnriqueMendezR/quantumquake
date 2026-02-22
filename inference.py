@@ -1,4 +1,4 @@
-import httpx, pandas as pd, numpy as np, json
+import httpx, pandas as pd, numpy as np, json, os
 from sklearn.preprocessing import StandardScaler
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -153,8 +153,15 @@ output = {
     "features": geojson_features,
 }
 
+# Write to repo root
 with open("earthquake_risk.geojson", "w") as f:
     json.dump(output, f, indent=2)
 
+# Also write to web app public so the heat map loads without copying
+_web_public = os.path.join(os.path.dirname(__file__), "apps", "web", "public", "earthquake_risk.geojson")
+os.makedirs(os.path.dirname(_web_public), exist_ok=True)
+with open(_web_public, "w") as f:
+    json.dump(output, f, indent=2)
+
 print(f"✅ Wrote {len(geojson_features)} features to earthquake_risk.geojson")
-print(f"   {len(features)} risk cells + {len(df)} quake points")
+print(f"   (repo root + apps/web/public/) — {len(features)} risk cells + {len(df)} quake points")
