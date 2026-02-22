@@ -1,0 +1,10 @@
+{
+  "name": "quantumquake",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web"
+  }
+}
