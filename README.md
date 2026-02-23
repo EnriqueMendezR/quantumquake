@@ -1,6 +1,6 @@
 # QuantumQuake
 
-Real-time earthquake visualisation powered by AI (Vercel AI SDK + Claude) and a quantum anomaly-scoring microservice (Qiskit + FastAPI).
+Quantum-enhanced earthquake risk prediction for the US West Coast. Uses a Variational Quantum Classifier (VQC) trained on USGS seismic data alongside a classical Random Forest baseline to forecast M5.0+ earthquake probability across grid cells in California, Oregon, and Washington. Features real-time data ingestion, seismological feature engineering (b-values, magnitude stats), and an interactive Leaflet map frontend for risk visualization.
 
 ## Repository layout
 
