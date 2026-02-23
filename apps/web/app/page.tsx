@@ -5,18 +5,12 @@ import { useChat } from "ai/react";
 import { useMemo, useState, useCallback } from "react";
 import { INITIAL_GEOLOGY_MESSAGE } from "../lib/prompts";
 
-const Map = dynamic(() => import("../components/Map"), {
-  ssr: false,
-  loading: () => <div style={{ flex: 1, background: "#f5f5f5" }} />,
-});
-
-const RiskHeatMap = dynamic(() => import("../components/RiskHeatMap"), {
+const InferenceMap = dynamic(() => import("../components/InferenceMap"), {
   ssr: false,
   loading: () => (
     <div
       style={{
-        width: "100%",
-        height: "100%",
+        flex: 1,
         background: "#f5f5f5",
         display: "flex",
         alignItems: "center",
@@ -25,7 +19,7 @@ const RiskHeatMap = dynamic(() => import("../components/RiskHeatMap"), {
         color: "#666",
       }}
     >
-      Loading heat map…
+      Loading map…
     </div>
   ),
 });
@@ -189,18 +183,19 @@ export default function Home() {
     [handleSubmit]
   );
 
-  // Extract the most recent getEarthquakes result
-  const earthquakes = useMemo(() => {
+  // Extract region from the most recent getEarthquakes tool call (so inference API plots that region)
+  const plotRegion = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role === "assistant" && msg.toolInvocations) {
         const inv = (msg.toolInvocations as ToolResult[]).find(
           (t) => t.toolName === "getEarthquakes" && t.state === "result"
         );
-        if (inv && Array.isArray(inv.result)) return inv.result;
+        const args = inv?.args as { region?: string } | undefined;
+        if (args?.region) return args.region;
       }
     }
-    return [];
+    return null;
   }, [messages]);
 
   // ── Landing screen ──────────────────────────────────────────────────────
@@ -277,10 +272,6 @@ export default function Home() {
   }
 
   // ── Chat screen (split layout) ──────────────────────────────────────────
-  const firstEq = earthquakes[0] as
-    | { properties: { place: string } }
-    | undefined;
-
   const hasAssistantReply = messages.some(
     (m) =>
       m.role === "assistant" &&
@@ -455,18 +446,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Center: earthquake map ── */}
+      {/* ── Single map: risk cells + earthquakes from inference API (region from agent) ── */}
       <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
-        <Map earthquakes={earthquakes as never[]} />
-
-        {/* Coordinates info pill (matches Figma Rectangle 7) */}
-        {earthquakes.length > 0 && (
+        <InferenceMap region={chatStarted ? plotRegion ?? "california" : null} />
+        {plotRegion && (
           <div
             style={{
               position: "absolute",
-              bottom: 50,
-              left: 55,
-              right: 55,
+              bottom: 24,
+              left: 24,
+              right: 24,
               background: "#fffdfd",
               border: "1px solid #d5d5d5",
               borderRadius: 24,
@@ -480,36 +469,9 @@ export default function Home() {
               textOverflow: "ellipsis",
             }}
           >
-            {earthquakes.length} earthquakes ·{" "}
-            {firstEq?.properties?.place ?? "various locations"}
+            Risk + earthquakes · {plotRegion}
           </div>
         )}
-      </div>
-
-      {/* ── Right panel: risk heat map (from inference.py earthquake_risk.geojson) ── */}
-      <div
-        style={{
-          width: 420,
-          flexShrink: 0,
-          borderLeft: "1px solid #d5d5d5",
-          position: "relative",
-          background: "#f5f5f5",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            left: 8,
-            zIndex: 1000,
-            fontSize: 12,
-            fontWeight: 600,
-            color: "#2d2c2c",
-          }}
-        >
-          Risk heat map
-        </div>
-        <RiskHeatMap />
       </div>
     </main>
   );

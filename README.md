@@ -43,7 +43,18 @@ Type a prompt such as:
 
 > Show me M3+ earthquakes in California in the last 7 days
 
-The AI will call the `getEarthquakes` tool, which fetches live data from the USGS API, plots circle markers on the map, and streams back a short natural language summary.
+The AI will call the `getEarthquakes` tool, which fetches live data from the USGS API. The **region** from that tool call (e.g. `california`) is sent to the **Inference API**, which returns risk cells + earthquake points for the map. The map shows both risk heat cells and quake markers in one view.
+
+### Inference API (required for the combined map)
+
+From the repo root, with dependencies from `inference.py` (httpx, pandas, numpy, pennylane, sklearn, etc.) and `weights.npy` + `scaler.pkl` in place:
+
+```bash
+# Python venv with inference deps, then:
+uvicorn inference_api:app --reload --port 8001
+```
+
+The Next.js app will call `http://localhost:8001` (or `INFERENCE_API_URL`) when you pass `?region=california` to `/api/risk-data`. The agent infers the region from the user prompt and passes it in `getEarthquakes`; the frontend reads that and requests the inference API for the same region.
 
 ---
 
@@ -107,10 +118,14 @@ uvicorn main:app --reload --port 8000
 Browser
   │
   ├─► Next.js (port 3000)
-  │     ├─ page.tsx          — Leaflet map + chat UI
-  │     └─ /api/chat         — Vercel AI SDK streamText
-  │           └─ getEarthquakes tool → USGS Earthquake API
+  │     ├─ page.tsx            — Chat UI + single map (risk + quakes)
+  │     ├─ /api/chat           — Vercel AI SDK streamText
+  │     │     └─ getEarthquakes(region, …) → USGS; frontend reads region from tool args
+  │     └─ /api/risk-data?region= — Proxies to Inference API or serves static GeoJSON
+  │
+  ├─► Inference API (port 8001)  uvicorn inference_api:app --port 8001
+  │     └─ /risk-data?region=    — Runs inference.py for region, returns GeoJSON
   │
   └─► FastAPI (port 8000)
-        └─ /quantum/score    — Qiskit AerSimulator anomaly scoring
+        └─ /quantum/score       — Qiskit AerSimulator anomaly scoring
 ```
